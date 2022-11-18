@@ -120,48 +120,103 @@ function(m,nfactors=3,fm="minres",key=NULL,flip=TRUE, digits=2,title="Omega",sl=
 
 
 "omega" <- 
-function(m,nfactors=3,fm="minres",n.iter=1,p=.05,poly=FALSE,key=NULL,flip=TRUE, digits=2,title="Omega",sl=TRUE,labels=NULL, plot=TRUE,n.obs=NA,rotate="oblimin",Phi = NULL,option="equal",covar=FALSE,...) {
- cl <- match.call()
-  if(is.data.frame(m) || is.matrix(m)) {if((isCorrelation(m)) | (isCovariance(m) && covar)) {if(is.na(n.obs) && (n.iter > 1)) stop("You must specify the number of subjects if giving a correlation matrix")
+function(m,nfactors=3,
+         fm="minres",
+         n.iter=1,
+         p=.05,
+         poly=FALSE,
+         key=NULL,
+         flip=TRUE,
+         digits=2,
+         title="Omega",
+         sl=TRUE,
+         labels=NULL, 
+         plot=TRUE,
+         n.obs=NA,
+         rotate="oblimin",
+         Phi = NULL,
+         option="equal",
+         covar=FALSE,
+         ...) {
+ 
+  cl <- match.call()
+  if(is.data.frame(m) || is.matrix(m)){
+    if((isCorrelation(m)) | (isCovariance(m) && covar)){
+      if(is.na(n.obs) && (n.iter > 1)) stop("You must specify the number of subjects if giving a correlation matrix")
                                 # if(!require(MASS)) stop("You must have MASS installed to simulate data from a correlation matrix")
-                                 }
-                  }
- if(!is.data.frame(m) && !is.matrix(m)) {  n.obs=m$n.obs
-                if(poly) {
-                      pol <- list(rho=m$rho,tau = m$tau,n.obs=m$n.obs)
-                        
-                           m <- m$rho
-                          } else { m <- m$R 
-                          }
-                          } else { #new data
+    }
+  }
+  
+ if(!is.data.frame(m) && !is.matrix(m)){
+   n.obs=m$n.obs
+   if(poly){
+      pol <- list(rho=m$rho,tau = m$tau,n.obs=m$n.obs)
+      m <- m$rho
+   }else{
+     m <- m$R 
+   }
+ }else{ #new data
 
-          if(poly) { pol <- polychoric(m)
-                     m <- pol$rho
-                     n.obs <- pol$n.obs}  }       
-            om <- omegah(m=m,nfactors=nfactors,fm=fm,key=key,flip=flip, digits=digits,title=title,sl=sl,labels=labels, plot=plot,n.obs=n.obs,rotate=rotate,Phi = Phi,option=option,covar=covar,...) #call omega with the appropriate parameters
+      if(poly){
+        pol <- polychoric(m);
+        m <- pol$rho;
+        n.obs <- pol$n.obs;
+      }
+   }       
+            
+  om <- omegah(m=m,nfactors=nfactors,fm=fm,key=key,flip=flip, digits=digits,title=title,sl=sl,labels=labels, plot=plot,n.obs=n.obs,rotate=rotate,Phi = Phi,option=option,covar=covar,...) #call omega with the appropriate parameters
     
 
        
- if(is.na(n.obs) ) {n.obs <- om$stats$n.obs} 
- replicates <- list()
- if(n.iter > 1) {for (trials in 1:n.iter) {
- if(dim(m)[1] == dim(m)[2]) {#create data sampled from multivariate normal with correlation
-                                      nvar <- dim(m)[1]
-                                      #mu <- rep(0, nvar)
-                                     # m <- mvrnorm(n = n.obs, mu, Sigma = m, tol = 1e-06, empirical = FALSE)
- #the next 3 lines replaces mvrnorm (taken from mvrnorm, but without the checks)
-                                      eX <- eigen(m)
-                                      m <- matrix(rnorm(nvar * n.obs),n.obs)
-                                      m <-  t(eX$vectors %*% diag(sqrt(pmax(eX$values, 0)), nvar) %*%  t(m))
-                            } else {m <- m[sample(n.obs,n.obs,replace=TRUE),]}
-    if(poly) {pol <- polychoric(m)
-            oms <- omegah(m=pol$rho,nfactors=nfactors,fm=fm,key=key,flip=flip, digits=digits,title=title,sl=sl,labels=labels, plot=plot,n.obs=pol$n.obs,rotate=rotate,Phi = Phi,option=option,...) #call omega with the appropriate parameters
-            } else {
- oms <- omegah(m=m,nfactors=nfactors,fm=fm,key=key,flip=flip, digits=digits,title=title,sl=sl,labels=labels, plot=plot,n.obs=n.obs,rotate=rotate,Phi = Phi,option=option,...) #call omega with the appropriate parameters
- }                         
- # oms <-omegah(m=m,nfactors=nfactors,fm=fm,key=key,flip=flip, digits=digits,title=title,sl=sl,labels=labels, plot=plot,n.obs=n.obs,rotate=rotate,Phi = Phi,option=option,...) #call fa with the appropriate parameters
-  replicates[[trials]] <- list(omega=oms$omega_h,alpha=oms$alpha,omega.tot=oms$omega.tot,G6=oms$G6,omega.lim=oms$omega.lim)
-  }
+ if(is.na(n.obs)){
+   n.obs <- om$stats$n.obs;
+ } 
+ 
+ replicates <- list();
+ 
+ if(n.iter > 1){
+   
+   for (trials in 1:n.iter){
+     
+      if(dim(m)[1] == dim(m)[2]){#create data sampled from multivariate normal with correlation
+         nvar <- dim(m)[1];
+         #mu <- rep(0, nvar)
+         # m <- mvrnorm(n = n.obs, mu, Sigma = m, tol = 1e-06, empirical = FALSE)
+         #the next 3 lines replaces mvrnorm (taken from mvrnorm, but without the checks)
+         eX <- eigen(m);
+         m <- matrix(rnorm(nvar * n.obs),n.obs);
+         m <-  t(eX$vectors %*% diag(sqrt(pmax(eX$values, 0)), nvar) %*%  t(m));
+         
+      }else{
+         m <- m[sample(n.obs,n.obs,replace=TRUE),];
+      }
+      
+     
+      if(poly){
+        pol <- polychoric(m);
+        oms <- omegah(m=pol$rho,nfactors=nfactors,fm=fm,key=key,flip=flip, digits=digits,title=title,sl=sl,labels=labels, plot=plot,n.obs=pol$n.obs,rotate=rotate,Phi = Phi,option=option,...) #call omega with the appropriate parameters
+      }else{
+        oms <- omegah(m=m,
+                      nfactors=nfactors,
+                      fm=fm,
+                      key=key,
+                      flip=flip,
+                      digits=digits,
+                      title=title,
+                      sl=sl,
+                      labels=labels,
+                      plot=plot,
+                      n.obs=n.obs,
+                      rotate=rotate,
+                      Phi = Phi,
+                      option=option,
+                      ...); #call omega with the appropriate parameters
+      } 
+     
+     
+    # oms <-omegah(m=m,nfactors=nfactors,fm=fm,key=key,flip=flip, digits=digits,title=title,sl=sl,labels=labels, plot=plot,n.obs=n.obs,rotate=rotate,Phi = Phi,option=option,...) #call fa with the appropriate parameters
+    replicates[[trials]] <- list(omega=oms$omega_h,alpha=oms$alpha,omega.tot=oms$omega.tot,G6=oms$G6,omega.lim=oms$omega.lim)
+  } # End for.
   
 replicates <- matrix(unlist(replicates),ncol=5,byrow=TRUE)
 z.replicates <- cbind(fisherz(replicates[,1:4]),replicates[,5])  #convert to z scores
@@ -175,15 +230,22 @@ rownames(ci) <- c("omega_h","alpha","omega_tot","G6","omega_lim")
 colnames(replicates) <- names(means) <- names(sds) <- rownames(ci) 
 conf <- list(means = means,sds = sds,ci = ci,Call= cl,replicates=replicates)
 om$Call=cl
-results <- list(om = om,ci=conf) } else {om$Call=cl
-                                         if(poly) {om$rho <- pol$rho
-                                                   om$tau <- pol$tau
-                                                   om$n.obs <- pol$n.obs
-                                                   }
-                                         results <- om}
-class(results) <- c("psych","omega")
-return(results)
+results <- list(om = om,ci=conf)
+
+ }else{
+     m$Call=cl;
+     if(poly){
+        om$rho <- pol$rho;
+        om$tau <- pol$tau;
+        om$n.obs <- pol$n.obs;
+      }
+      results <- om;
  }
+
+ class(results) <- c("psych","omega");
+ return(results)
+
+}
  #written April 25, 2011
  #adapted May 12, 2011 to be the primary version of omega
  
